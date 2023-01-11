@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<!--Autores: John Carvajal, Sebastian De Villa-->
+
+<canvas id="canvas" width="600" height="400" tabindex="1"></canvas>
+
+<style>
+#canvas {
+    width: 800px;
+    height: 600px;
+    border: 1px solid rgb(0, 0, 0);
+  }
+</style>
+
+<script type="text/javascript">
+var canvas = document.getElementById('canvas');
+var context = canvas.getContext('2d');
+//----------------------------------------------------------------------------------
+
+// Funcion para crear los cuadrados
+function crearcuadrado(x, y, longitud, velocidad) {
+  return {
+    x: x,
+    y: y,
+    l: longitud,
+    s: velocidad,
+    dibujar: function() {
+      context.fillRect(this.x, this.y, this.l, this.l);
+    }
+  };
+}
+
+// La nave que controla el usuario
+var nave = crearcuadrado(50, canvas.height / 2 - 25, 30, 5);
+var up = false;
+var down = false;
+
+// Variables para enemigos
+var enemigos = [];
+var velocidadenemigo = 8;
+
+function makeEnemy() {
+  var enemigoX = canvas.width;
+  var tamanoenemy = Math.round((Math.random() * 15)) + 15;
+  var enemigoY = Math.round(Math.random() * (canvas.height - tamanoenemy * 2)) + tamanoenemy;
+  var VelocEnemigo = Math.round(Math.random() * velocidadenemigo) + velocidadenemigo;
+  enemigos.push(crearcuadrado(enemigoX, enemigoY, tamanoenemy, VelocEnemigo));
+}
+
+// Revisar que a este en rango b a c 
+function isWithin(a, b, c) {
+  return (a > b && a < c);
+}
+
+// Devolver true si dos cuadrados a y b colisionan, sino es false
+function colisionando(a, b) {
+  var result = false;
+  if (isWithin(a.x, b.x, b.x + b.l) || isWithin(a.x + a.l, b.x, b.x + b.l)) {
+    if (isWithin(a.y, b.y, b.y + b.l) || isWithin(a.y + a.l, b.y, b.y + b.l)) {
+      result = true;
+    }
+  }
+  return result;
+}
+
+// Retraso de la aparicion de enemigos
+var tiempoentreenemigos = 1 * 500;
+var timeoutId = null;
+
+// Menu principal
+function menu() {
+  erase();
+  context.fillStyle = '#000000';
+  context.font = '36px Arial';
+  context.textAlign = 'center';
+  context.fillText('Práctica Video Juego', canvas.width / 2, canvas.height / 4);
+  context.font = '24px Arial';
+  context.fillText('Click para empezar', canvas.width / 2, canvas.height / 2);
+  context.font = '18px Arial';
+  context.fillText('Esquiva los obstaculos - Arriba/Abajo para moverse.', canvas.width / 2, (canvas.height / 4) * 3);
+  // Empieza juego
+  canvas.addEventListener('click', startGame);
+}
+
+// Comenzar el juego
+function startGame() {
+  // Intervalo para que los enemigos aparezcan
+  timeoutId = setInterval(makeEnemy, tiempoentreenemigos);
+  // Tiempo que se demora en aparecer el primer enemigo
+  setTimeout(makeEnemy, 1000);
+  // draw loop
+  dibujar();
+  // Evento Click
+  canvas.removeEventListener('click', startGame);
+}
+
+// Funcion para mostrar pantalla de final de juego
+function endGame() {
+  clearInterval(timeoutId);
+  // Pantalla Final y contenido
+  erase();
+  context.fillStyle = '#000000';
+  context.font = '24px Arial';
+  context.textAlign = 'center';
+  context.fillText('FIN DEL JUEGO  Te han estrellado', canvas.width / 2, canvas.height / 2);
+}
+
+// Eventos con el teclado
+canvas.addEventListener('keydown', function(event) {
+  event.preventDefault();
+  if (event.keyCode === 38) { // UP
+    up = true;
+  }
+  if (event.keyCode === 40) { // DOWN
+    down = true;
+  }
+});
+
+//Keyup eventos
+canvas.addEventListener('keyup', function(event) {
+  event.preventDefault();
+  if (event.keyCode === 38) { // UP 
+    up = false;
+  }
+  if (event.keyCode === 40) { // DOWN
+    down = false;
+  }
+});
+
+// Limpiar el canvas
+function erase() {
+  context.fillStyle = '#FFFFFF';
+  context.fillRect(0, 0, 600, 400);
+}
+
+// Loop que dibuja 
+function dibujar() {
+  erase();
+  var gameOver = false;
+  // Mover y dibujar los enemigos
+  enemigos.forEach(function(enemigo) {
+    enemigo.x -= enemigo.s;
+    if (enemigo.x < 0) {
+      gameOver = false;
+    }
+    context.fillStyle = '#00FF00';
+    enemigo.dibujar();
+  });
+  //Colision entre nave y enemigos
+  enemigos.forEach(function(enemigo, i) {
+    if (colisionando(enemigo, nave)) {
+      gameOver = true;
+    }
+  });
+  // Mover la nave 
+  if (down) {
+    nave.y += nave.s;
+  }
+  if (up) {
+    nave.y -= nave.s;
+  }
+  // Evita que la nave se salga de los bordes
+  if (nave.y < 0) {
+    nave.y = 0;
+  }
+  if (nave.y > canvas.height - nave.l) {
+    nave.y = canvas.height - nave.l;
+  }
+  // Dibuja la nave
+  context.fillStyle = '#d1e30e';
+  nave.dibujar();
+
+  // Termina o continua el juego
+  if (gameOver) {
+    endGame();
+  } else {
+    window.requestAnimationFrame(dibujar);
+  }
+}
+
+menu();
+canvas.focus();
+
+</script>
+</html>
